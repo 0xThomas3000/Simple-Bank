@@ -66,9 +66,6 @@ type TransferTxResult struct {
 	ToEntry     Entry    `json:"to_entry"`     // The entry of the ToAccount which records that money is moving in
 }
 
-// Later, will use this Key to get the Tx name from the input context of the TransferTx()
-var txKey = struct{}{} // The second bracket (creating a "new empty obj of that type")
-
 // TransferTx performs a money transfer from one account to the other.
 // It creates a transfer record, add new account entries, update accounts' balance within a single database transaction
 func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
@@ -78,12 +75,9 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		/* Step 1: Create a transfer record */
 		var err error
 
-		txName := ctx.Value(txKey) // Get back the Tx name from Context
-
 		// To implement this callback function: can use Queries obj to call any individual CRUD function that it provides
 		// (this Queries obj is created from 1 single DB TX, so all of its provided methods we call will be run within that TX)
 		// The output transfer will be save to result.Transfer
-		fmt.Println(txName, "create transfer") // Print out the Tx name and the first operation: "create transfer"
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
 			FromAccountID: arg.FromAccountID,
 			ToAccountID:   arg.ToAccountID,
@@ -98,7 +92,6 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		}
 
 		/* Step 2: Add 2 Accounts entry, 1 for the FromAccount, 1 for the ToAccount */
-		fmt.Println(txName, "create entry 1")
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.FromAccountID,
 			Amount:    -arg.Amount,
@@ -107,7 +100,6 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
-		fmt.Println(txName, "create entry 2")
 		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
 			AccountID: arg.ToAccountID,
 			Amount:    arg.Amount,
@@ -118,13 +110,11 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 
 		/********* Step 3: update accounts' balance *********/
 		// Moving the Money out of the fromAccount
-		fmt.Println(txName, "get account 1")
 		account1, err := q.GetAccountForUpdate(ctx, arg.FromAccountID)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(txName, "update account 1")
 		result.FromAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
 			ID:      arg.FromAccountID,
 			Balance: account1.Balance - arg.Amount,
@@ -134,13 +124,11 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		}
 
 		// Do similar thing to move those money into the toAccount
-		fmt.Println(txName, "get account 2")
 		account2, err := q.GetAccountForUpdate(ctx, arg.ToAccountID)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(txName, "update account 2")
 		result.ToAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
 			ID:      arg.ToAccountID,
 			Balance: account2.Balance + arg.Amount,

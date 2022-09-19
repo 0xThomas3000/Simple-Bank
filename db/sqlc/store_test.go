@@ -15,7 +15,7 @@ func TestTransferTx(t *testing.T) {
 	account2 := createRandomAccount(t)
 	fmt.Println(">> before:", account1.Balance, account2.Balance) // Display the accounts' balance before the transactions
 
-	n := 2 // Create 2 Goroutines to execute "5 concurrent transfer transactions".
+	n := 5 // Create 5 Goroutines to execute "5 concurrent transfer transactions".
 	amount := int64(10)
 
 	errs := make(chan error)
@@ -23,9 +23,8 @@ func TestTransferTx(t *testing.T) {
 
 	// Run "n concurrent transfer transaction"
 	for i := 0; i < n; i++ {
-		txName := fmt.Sprintf("tx %d", i+1) // Store "the name of the transaction"
 		go func() {                         // Each of them will transfer the same amount of money from account1 to account2
-			ctx := context.WithValue(context.Background(), txKey, txName) // Add the transaction name to the context (passing context BG as parent context & a pair of Key value where value's Tx name)
+			ctx := context.Background()
 			result, err := store.TransferTx(ctx, TransferTxParams{        // Pass in the new context with the transaction name
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
