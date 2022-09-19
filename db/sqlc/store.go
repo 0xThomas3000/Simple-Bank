@@ -119,7 +119,7 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		/********* Step 3: update accounts' balance *********/
 		// Moving the Money out of the fromAccount
 		fmt.Println(txName, "get account 1")
-		account1, err := q.GetAccount(ctx, arg.FromAccountID)
+		account1, err := q.GetAccountForUpdate(ctx, arg.FromAccountID)
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 
 		// Do similar thing to move those money into the toAccount
 		fmt.Println(txName, "get account 2")
-		account2, err := q.GetAccount(ctx, arg.ToAccountID)
+		account2, err := q.GetAccountForUpdate(ctx, arg.ToAccountID)
 		if err != nil {
 			return err
 		}
